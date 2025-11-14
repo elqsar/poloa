@@ -4,13 +4,17 @@ PostgreSQL Log Parser - CLI Application
 Efficiently parses PostgreSQL log files and extracts useful statistics, errors, and slow queries.
 """
 
-import re
-from datetime import datetime
-from collections import defaultdict, Counter
-from dataclasses import dataclass
-from typing import Optional, List, Dict, Tuple
 import json
+import re
+from collections import Counter
+from dataclasses import dataclass
+from typing import Optional, List, Tuple
+
 import click
+from rich import box
+from rich.console import Console
+from rich.panel import Panel
+from rich.table import Table
 
 
 @dataclass
@@ -158,7 +162,7 @@ class PostgreSQLLogParser:
         """Get all ERROR and FATAL level entries"""
         return [e for e in self.entries if e.level in ('ERROR', 'FATAL')]
 
-    def get_slow_queries(self, threshold_ms: float = 5000.0) -> List[Tuple[float, LogEntry, Optional[str]]]:
+    def get_slow_queries(self, threshold_ms: float = 3000.0) -> List[Tuple[float, LogEntry, Optional[str]]]:
         """
         Extract queries that took longer than threshold_ms milliseconds
         Returns list of (duration, LogEntry, parameters) tuples sorted by duration descending
@@ -212,7 +216,6 @@ class PostgreSQLLogParser:
             e for e in self.entries
             if any(keyword in e.message for keyword in connection_keywords)
         ]
-
 
     def get_checkpoint_info(self) -> List[LogEntry]:
         """Get checkpoint-related log entries"""
@@ -321,57 +324,158 @@ class PostgreSQLLogParser:
         return self.stats['database_counts'].most_common(n)
 
     def print_summary(self):
-        """Print a summary of the parsed log file"""
-        print("\n" + "="*80)
-        print("PostgreSQL Log Analysis Summary")
-        print("="*80)
+        """Print a beautifully formatted summary of the parsed log file using Rich"""
+        console = Console()
 
-        print(f"\n📊 Overall Statistics:")
-        print(f"  Total lines: {self.stats['total_lines']}")
-        print(f"  Parsed entries: {self.stats['parsed_lines']}")
-        print(f"  Unparsed lines: {self.stats['unparsed_lines']}")
+        # Header
+        console.print()
+        console.print(Panel.fit(
+            "[bold cyan]PostgreSQL Log Analysis Summary[/bold cyan]",
+            border_style="cyan",
+            box=box.DOUBLE
+        ))
+        console.print()
 
-        print(f"\n📈 Log Levels:")
+        # Overall Statistics Table
+        stats_table = Table(title="📊 Overall Statistics", box=box.ROUNDED, show_header=False)
+        stats_table.add_column("Metric", style="cyan", width=25)
+        stats_table.add_column("Value", style="green bold", justify="right")
+
+        stats_table.add_row("Total lines", f"{self.stats['total_lines']:,}")
+        stats_table.add_row("Parsed entries", f"{self.stats['parsed_lines']:,}")
+        stats_table.add_row("Unparsed lines", f"{self.stats['unparsed_lines']:,}")
+
+        parse_rate = (self.stats['parsed_lines'] / self.stats['total_lines'] * 100) if self.stats[
+                                                                                           'total_lines'] > 0 else 0
+        stats_table.add_row("Parse rate", f"{parse_rate:.1f}%")
+
+        console.print(stats_table)
+        console.print()
+
+        # Log Levels Table
+        levels_table = Table(title="📈 Log Levels Distribution", box=box.ROUNDED)
+        levels_table.add_column("Level", style="cyan")
+        levels_table.add_column("Count", justify="right", style="yellow")
+        levels_table.add_column("Percentage", justify="right", style="green")
+
+        total_entries = sum(self.stats['level_counts'].values())
         for level, count in self.stats['level_counts'].most_common():
-            print(f"  {level:15s}: {count:6d}")
+            percentage = (count / total_entries * 100) if total_entries > 0 else 0
 
-        print(f"\n🗄️  Top Databases:")
-        for db, count in self.get_top_databases(5):
-            print(f"  {db:20s}: {count:6d}")
+            # Color code based on severity
+            if level in ('ERROR', 'FATAL'):
+                level_style = "[bold red]"
+            elif level == 'WARNING':
+                level_style = "[bold yellow]"
+            else:
+                level_style = "[bold white]"
 
-        print(f"\n👥 Top Users:")
-        for user, count in self.stats['user_counts'].most_common(5):
-            print(f"  {user:20s}: {count:6d}")
+            levels_table.add_row(
+                f"{level_style}{level}[/]",
+                f"{count:,}",
+                f"{percentage:.1f}%"
+            )
 
-        print(f"\n🌐 Top IP Addresses:")
-        for ip, count in self.get_top_ips(5):
-            print(f"  {ip:20s}: {count:6d}")
+        console.print(levels_table)
+        console.print()
 
-        # Errors
+        # Top Databases Table
+        if self.stats['database_counts']:
+            db_table = Table(title="🗄️  Top Databases", box=box.ROUNDED)
+            db_table.add_column("Database", style="cyan")
+            db_table.add_column("Entries", justify="right", style="yellow")
+
+            for db, count in self.get_top_databases(5):
+                db_table.add_row(db, f"{count:,}")
+
+            console.print(db_table)
+            console.print()
+
+        # Top Users Table
+        if self.stats['user_counts']:
+            user_table = Table(title="👥 Top Users", box=box.ROUNDED)
+            user_table.add_column("User", style="cyan")
+            user_table.add_column("Entries", justify="right", style="yellow")
+
+            for user, count in self.stats['user_counts'].most_common(5):
+                user_table.add_row(user, f"{count:,}")
+
+            console.print(user_table)
+            console.print()
+
+        # Top IP Addresses Table
+        if self.stats['ip_counts']:
+            ip_table = Table(title="🌐 Top IP Addresses", box=box.ROUNDED)
+            ip_table.add_column("IP Address", style="cyan")
+            ip_table.add_column("Entries", justify="right", style="yellow")
+
+            for ip, count in self.get_top_ips(5):
+                ip_table.add_row(ip, f"{count:,}")
+
+            console.print(ip_table)
+            console.print()
+
+        # Errors Section
         errors = self.get_errors()
-        print(f"\n❌ Errors and Fatals: {len(errors)}")
         if errors:
-            print(f"  Showing first 5:")
-            for error in errors[:5]:
-                print(f"  [{error.timestamp}] {error.level}: {error.message[:80]}...")
+            error_panel = Panel(
+                f"[bold red]{len(errors)}[/bold red] errors and fatal messages found",
+                title="❌ Errors and Fatals",
+                border_style="red",
+                box=box.ROUNDED
+            )
+            console.print(error_panel)
 
-        # Slow queries
-        slow_queries = self.get_slow_queries(5000)
-        print(f"\n🐌 Slow Queries (>5s): {len(slow_queries)}")
+            if errors:
+                error_table = Table(box=box.SIMPLE, show_header=True, header_style="bold red")
+                error_table.add_column("Timestamp", style="dim", width=19)
+                error_table.add_column("Level", style="red bold", width=8)
+                error_table.add_column("Database", style="cyan", width=15)
+                error_table.add_column("Message", style="white")
+
+                for error in errors[:5]:
+                    msg = error.message[:80] + "..." if len(error.message) > 80 else error.message
+                    error_table.add_row(
+                        error.timestamp,
+                        error.level,
+                        error.database or "N/A",
+                        msg
+                    )
+
+                console.print(error_table)
+            console.print()
+
+        # Slow Queries Section
+        slow_queries = self.get_slow_queries(3000)
         if slow_queries:
-            print(f"  Top 10 slowest:")
-            for duration, entry, parameters in slow_queries[:10]:
-                print(f"  {duration:10.2f}ms - {entry.message}...")
-                if parameters:
-                    # Truncate parameters if too long
-                    if len(parameters) > 150:
-                        print(f"    Parameters: {parameters[:150]}...")
-                    else:
-                        print(f"    Parameters: {parameters}")
+            slow_panel = Panel(
+                f"[bold yellow]{len(slow_queries)}[/bold yellow] queries slower than 5 seconds",
+                title="🐌 Slow Queries (>3s)",
+                border_style="yellow",
+                box=box.ROUNDED
+            )
+            console.print(slow_panel)
 
-        # Connection issues
+            slow_table = Table(box=box.SIMPLE, show_header=True, header_style="bold yellow")
+            slow_table.add_column("Duration", justify="right", style="red bold", width=12)
+            slow_table.add_column("Timestamp", style="dim", width=19)
+            slow_table.add_column("Database", style="cyan", width=15)
+            slow_table.add_column("Query", style="white")
+
+            for duration, entry, parameters in slow_queries[:10]:
+                msg = entry.message[:60] + "..." if len(entry.message) > 60 else entry.message
+                slow_table.add_row(
+                    f"{duration:,.2f} ms",
+                    entry.timestamp,
+                    entry.database or "N/A",
+                    msg
+                )
+
+            console.print(slow_table)
+            console.print()
+
+        # Connection Issues Section
         conn_issues = self.get_connection_issues()
-        print(f"\n🔌 Connection Issues: {len(conn_issues)}")
         if conn_issues:
             # Group by type
             issue_types = Counter()
@@ -385,32 +489,71 @@ class PostgreSQLLogParser:
                 else:
                     issue_types['Other connection issues'] += 1
 
+            conn_panel = Panel(
+                f"[bold orange1]{len(conn_issues)}[/bold orange1] connection-related issues detected",
+                title="🔌 Connection Issues",
+                border_style="orange1",
+                box=box.ROUNDED
+            )
+            console.print(conn_panel)
+
+            conn_table = Table(box=box.SIMPLE, show_header=True, header_style="bold orange1")
+            conn_table.add_column("Issue Type", style="cyan")
+            conn_table.add_column("Count", justify="right", style="yellow")
+
             for issue_type, count in issue_types.most_common():
-                print(f"  {issue_type:30s}: {count:6d}")
+                conn_table.add_row(issue_type, f"{count:,}")
 
-        # Checkpoints
-        checkpoints = self.get_checkpoint_info()
-        print(f"\n💾 Checkpoints: {len(checkpoints)}")
+            console.print(conn_table)
+            console.print()
 
-        # Vacuums
-        vacuums = self.get_vacuum_info()
-        print(f"\n🧹 Autovacuum Operations: {len(vacuums)}")
-
-        # Deadlocks
+        # Deadlocks Section
         deadlocks = self.get_deadlocks()
-        print(f"\n🔒 Deadlocks Detected: {len(deadlocks)}")
         if deadlocks:
-            print(f"  Showing all deadlocks:")
-            for i, dl in enumerate(deadlocks, 1):
-                print(f"\n  Deadlock #{i} at {dl.timestamp} in database '{dl.database}':")
-                print(f"    Process {dl.process1_pid} vs Process {dl.process2_pid}")
-                print(f"    Lock Info: {dl.lock_info[:100]}...")
-                if dl.process1_query:
-                    print(f"    Query 1: {dl.process1_query[:80]}...")
-                if dl.process2_query:
-                    print(f"    Query 2: {dl.process2_query[:80]}...")
+            deadlock_panel = Panel(
+                f"[bold red]{len(deadlocks)}[/bold red] deadlock events detected",
+                title="🔒 Deadlocks",
+                border_style="red",
+                box=box.ROUNDED
+            )
+            console.print(deadlock_panel)
 
-        print("\n" + "="*80)
+            for i, dl in enumerate(deadlocks, 1):
+                deadlock_info = f"[bold]Deadlock #{i}[/bold]\n"
+                deadlock_info += f"[dim]Time:[/dim] {dl.timestamp}\n"
+                deadlock_info += f"[dim]Database:[/dim] {dl.database}\n"
+                deadlock_info += f"[dim]Processes:[/dim] {dl.process1_pid} ⚔️  {dl.process2_pid}\n"
+
+                if dl.lock_info:
+                    lock_preview = dl.lock_info[:100] + "..." if len(dl.lock_info) > 100 else dl.lock_info
+                    deadlock_info += f"[dim]Lock Info:[/dim] {lock_preview}\n"
+
+                if dl.process1_query:
+                    query1_preview = dl.process1_query[:80] + "..." if len(
+                        dl.process1_query) > 80 else dl.process1_query
+                    deadlock_info += f"[dim]Query 1:[/dim] {query1_preview}\n"
+
+                if dl.process2_query:
+                    query2_preview = dl.process2_query[:80] + "..." if len(
+                        dl.process2_query) > 80 else dl.process2_query
+                    deadlock_info += f"[dim]Query 2:[/dim] {query2_preview}"
+
+                console.print(Panel(deadlock_info, border_style="red", box=box.ROUNDED))
+            console.print()
+
+        # Summary Metrics Panel
+        checkpoints = self.get_checkpoint_info()
+        vacuums = self.get_vacuum_info()
+
+        summary_table = Table(title="📋 Additional Metrics", box=box.ROUNDED, show_header=False)
+        summary_table.add_column("Metric", style="cyan", width=30)
+        summary_table.add_column("Count", style="green bold", justify="right")
+
+        summary_table.add_row("💾 Checkpoints", f"{len(checkpoints):,}")
+        summary_table.add_row("🧹 Autovacuum Operations", f"{len(vacuums):,}")
+
+        console.print(summary_table)
+        console.print()
 
     def export_to_json(self, output_file: str, include_all: bool = False):
         """
@@ -486,36 +629,100 @@ def main(log_file, output, export_all, slow_query_threshold, security_threshold)
     # Export to JSON
     parser.export_to_json(output, include_all=export_all)
 
-    # Detailed analysis section
-    print("\n" + "="*80)
-    print("🔍 Detailed Analysis Examples")
-    print("="*80)
+    # Detailed analysis section with Rich formatting
+    console = Console()
+
+    console.print()
+    console.print(Panel.fit(
+        "[bold magenta]🔍 Detailed Analysis[/bold magenta]",
+        border_style="magenta",
+        box=box.DOUBLE
+    ))
+    console.print()
 
     # Find potential security threats (many failed connections from same IP)
-    print(f"\n🚨 Potential Security Threats (IPs with >{security_threshold} connection issues):")
     conn_issues = parser.get_connection_issues()
     ip_issues = Counter(e.ip for e in conn_issues if e.ip)
     threats_found = False
-    for ip, count in ip_issues.most_common(10):
-        if count > security_threshold:
-            print(f"  {ip:20s}: {count:6d} failed connections")
-            threats_found = True
-    if not threats_found:
-        print(f"  No IPs with more than {security_threshold} connection issues found")
+
+    threat_ips = [(ip, count) for ip, count in ip_issues.most_common(10) if count > security_threshold]
+
+    if threat_ips:
+        threats_found = True
+        threat_panel = Panel(
+            f"[bold red]{len(threat_ips)}[/bold red] IP addresses with suspicious activity detected",
+            title=f"🚨 Potential Security Threats (>{security_threshold} connection issues)",
+            border_style="red",
+            box=box.ROUNDED
+        )
+        console.print(threat_panel)
+
+        threat_table = Table(box=box.SIMPLE, show_header=True, header_style="bold red")
+        threat_table.add_column("IP Address", style="red bold", width=20)
+        threat_table.add_column("Failed Connections", justify="right", style="yellow")
+        threat_table.add_column("Severity", style="red")
+
+        for ip, count in threat_ips:
+            if count > security_threshold * 5:
+                severity = "🔴 CRITICAL"
+            elif count > security_threshold * 2:
+                severity = "🟠 HIGH"
+            else:
+                severity = "🟡 MEDIUM"
+
+            threat_table.add_row(ip, f"{count:,}", severity)
+
+        console.print(threat_table)
+    else:
+        safe_panel = Panel(
+            f"[bold green]✓[/bold green] No IPs with more than {security_threshold} connection issues found",
+            title=f"🚨 Potential Security Threats (>{security_threshold} connection issues)",
+            border_style="green",
+            box=box.ROUNDED
+        )
+        console.print(safe_panel)
+
+    console.print()
 
     # Find constraint violations
-    print("\n⚠️  Database Constraint Violations:")
     constraint_errors = [
         e for e in parser.get_errors()
         if 'violates' in e.message or 'constraint' in e.message
     ]
-    if constraint_errors:
-        for error in constraint_errors[:10]:
-            print(f"  [{error.timestamp}] {error.database}: {error.message[:70]}...")
-    else:
-        print("  No constraint violations found")
 
-    print("\n" + "="*80)
+    if constraint_errors:
+        constraint_panel = Panel(
+            f"[bold yellow]{len(constraint_errors)}[/bold yellow] constraint violations detected",
+            title="⚠️  Database Constraint Violations",
+            border_style="yellow",
+            box=box.ROUNDED
+        )
+        console.print(constraint_panel)
+
+        constraint_table = Table(box=box.SIMPLE, show_header=True, header_style="bold yellow")
+        constraint_table.add_column("Timestamp", style="dim", width=19)
+        constraint_table.add_column("Database", style="cyan", width=15)
+        constraint_table.add_column("Violation", style="white")
+
+        for error in constraint_errors[:10]:
+            msg = error.message[:70] + "..." if len(error.message) > 70 else error.message
+            constraint_table.add_row(
+                error.timestamp,
+                error.database or "N/A",
+                msg
+            )
+
+        console.print(constraint_table)
+    else:
+        no_violations_panel = Panel(
+            "[bold green]✓[/bold green] No constraint violations found",
+            title="⚠️  Database Constraint Violations",
+            border_style="green",
+            box=box.ROUNDED
+        )
+        console.print(no_violations_panel)
+
+    console.print()
 
 
 if __name__ == '__main__':
