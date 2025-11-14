@@ -1,0 +1,40 @@
+# PostgreSQL Log Parser Configuration File
+# This file contains default settings that can be overridden via CLI arguments
+
+# Threshold settings
+thresholds:
+  # Minimum query duration in milliseconds to be considered "slow"
+  slow_query_ms: 3000.0
+
+  # Number of connection failures from a single IP to trigger security alert
+  security_connection_failures: 30
+
+# Display settings for terminal output
+display:
+  # Color scheme (currently only 'default' is supported)
+  color_scheme: "default"
+
+  # Show emoji icons in output
+  show_emojis: true
+
+  # Maximum number of items to display in summary tables
+  max_items_per_table: 10
+
+# Export settings
+export:
+  # Default export format (currently only 'json' is supported)
+  default_format: "json"
+
+  # Include all log entries in export (can result in large files)
+  include_all_entries: false
+
+# Pattern settings for log parsing
+patterns:
+  # Log format type: 'default' uses built-in PostgreSQL format
+  # Set to 'custom' and provide custom_pattern for non-standard formats
+  log_format: "default"
+
+  # Custom regex pattern (only used if log_format is 'custom')
+  # Example:
+  # custom_pattern: "^(?P<timestamp>\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}).*"
+  custom_pattern: null
