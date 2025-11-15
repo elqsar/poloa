@@ -16,51 +16,71 @@ A powerful CLI tool for parsing and analyzing PostgreSQL log files with beautifu
 
 ## Installation
 
+### Prerequisites
+Install [uv](https://docs.astral.sh/uv/) if you haven't already:
+```bash
+# On macOS and Linux
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# On Windows
+powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
+
 ### From Source (Development)
 ```bash
-# Clone the repository and install dependencies
-pip install -r requirements.txt
+# Clone the repository and install dependencies with uv
+uv sync
 
-# Or install in development mode
-pip install -e .
+# This creates a virtual environment and installs all dependencies
+# including development tools (pytest, black, mypy, etc.)
 ```
 
-### As a Package
+### Running the Tool
+After installation with uv, you can run the tool using:
 ```bash
-# Install the package
-pip install .
+# Using uv run (recommended)
+uv run postg-parser <log_file>
 
-# Install with YAML configuration support
-pip install ".[config]"
+# Or activate the virtual environment
+source .venv/bin/activate  # On macOS/Linux
+# .venv\Scripts\activate   # On Windows
+postg-parser <log_file>
 
-# Install with development dependencies
-pip install ".[dev]"
+# Or use the entry script directly (backward compatible)
+python3 main.py <log_file>
 ```
 
-After installation, you can use either:
-- `python3 main.py <log_file>` (backward compatible)
-- `postg-parser <log_file>` (if installed as package)
+### Installing as a Package
+```bash
+# Install the package in production mode (without dev dependencies)
+uv sync --no-dev
+
+# Or install the package globally
+uv pip install .
+```
 
 ## Usage
 
 ### Basic usage
 ```bash
-python3 main.py postgresql.log.2025-11-14-11
+uv run postg-parser postgresql.log.2025-11-14-11
+# Or using the legacy entry point:
+# python3 main.py postgresql.log.2025-11-14-11
 ```
 
 ### With custom options
 ```bash
-python3 main.py postgresql.log.2025-11-14-11 -o report.json -t 10000 -s 100
+uv run postg-parser postgresql.log.2025-11-14-11 -o report.json -t 10000 -s 100
 ```
 
 ### Export all entries
 ```bash
-python3 main.py postgresql.log.2025-11-14-11 --export-all
+uv run postg-parser postgresql.log.2025-11-14-11 --export-all
 ```
 
 ### Show help
 ```bash
-python3 main.py --help
+uv run postg-parser --help
 ```
 
 ## Options
