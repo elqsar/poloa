@@ -105,8 +105,6 @@ The tool provides:
 
 ## Project Structure
 
-The project has been refactored into a modular package structure for better maintainability and extensibility:
-
 ```
 postg/
 ├── postg/                      # Main package directory
@@ -133,5 +131,3 @@ postg/
 - **Extensibility**: Easy to add new analyzers or export formats
 - **Testability**: Isolated components are easier to unit test
 - **Configuration**: YAML config for customization without code changes
-- **Backward Compatible**: Existing CLI usage works identically
-- **Professional Structure**: Standard Python package layout

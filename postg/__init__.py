@@ -5,7 +5,7 @@ Version: 1.0.0
 """
 
 __version__ = "1.0.0"
-__author__ = "PostgreSQL Log Parser Team"
+__author__ = "Boris"
 
 from postg.models import LogEntry, DeadlockInfo, Config
 from postg.parser import PostgreSQLLogParser
