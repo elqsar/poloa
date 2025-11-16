@@ -13,6 +13,7 @@ A powerful CLI tool for parsing and analyzing PostgreSQL log files with beautifu
 - 🚨 **Security Alerts** - Identify suspicious IPs with excessive connection failures
 - ⚠️ **Constraint Violations** - Detect database constraint violations
 - 💾 **Checkpoint & Vacuum Tracking** - Monitor database maintenance operations
+- 📤 **Multiple Export Formats** - Export analysis results to JSON or CSV for further processing
 
 ## Installation
 
@@ -73,7 +74,19 @@ uv run poloa postgresql.log.2025-11-14-11
 uv run poloa postgresql.log.2025-11-14-11 -o report.json -t 10000 -s 100
 ```
 
-### Export all entries
+### Export to CSV format
+```bash
+# Export summary to CSV
+uv run poloa postgresql.log.2025-11-14-11 --format csv
+
+# Export to custom CSV file
+uv run poloa postgresql.log.2025-11-14-11 -f csv -o my_logs.csv
+
+# Export all entries to CSV (can be large)
+uv run poloa postgresql.log.2025-11-14-11 --format csv --export-all
+```
+
+### Export all entries to JSON
 ```bash
 uv run poloa postgresql.log.2025-11-14-11 --export-all
 ```
@@ -85,11 +98,12 @@ uv run poloa --help
 
 ## Options
 
-- `-o, --output` - Output JSON file path (default: log_analysis_summary.json)
+- `-o, --output` - Output file path (default: log_analysis_summary.json)
+- `-f, --format` - Export format: `json` or `csv` (default: json)
 - `-t, --slow-query-threshold` - Slow query threshold in milliseconds (default: 3000)
 - `-s, --security-threshold` - Connection issue threshold for security alerts (default: 30)
 - `-c, --config` - Path to YAML configuration file (optional)
-- `--export-all` - Export all log entries to JSON (can be large)
+- `--export-all` - Export all log entries (applies to both JSON and CSV formats)
 
 ## Configuration File
 
@@ -121,7 +135,19 @@ Or specify a custom path with `-c/--config` option
 
 The tool provides:
 1. **Terminal Visualization** - Beautiful, color-coded summary displayed in your terminal
-2. **JSON Export** - Structured data export for further analysis or integration
+2. **JSON Export** - Structured data export with statistics, errors, slow queries, and more
+3. **CSV Export** - Tabular export of all log entries for spreadsheet analysis or data processing
+
+### Export Formats
+
+#### JSON Format
+- **Summary mode** (default): Exports statistics, errors, slow queries, deadlocks, and counts
+- **Full mode** (`--export-all`): Exports all parsed log entries plus statistics
+- Best for: Programmatic analysis, integration with other tools, detailed investigation
+
+#### CSV Format
+- Exports all parsed log entries as a table with columns: timestamp, timezone, ip, port, user, database, pid, level, message
+- Best for: Spreadsheet analysis, data visualization tools, simple filtering and sorting
 
 ## Project Structure
 

@@ -5,6 +5,7 @@ This module contains the LogExporter class which handles
 exporting parsed data to JSON and other formats.
 """
 
+import csv
 import json
 from typing import Optional
 
@@ -76,13 +77,30 @@ class LogExporter:
 
     def export_to_csv(self, output_file: str):
         """
-        Export parsed data to CSV file (future implementation).
+        Export parsed data to CSV file.
+
+        Exports all log entries with columns: timestamp, timezone, ip, port,
+        user, database, pid, level, message.
 
         Args:
             output_file: Path to output CSV file
         """
-        # TODO: Implement CSV export
-        raise NotImplementedError("CSV export not yet implemented")
+        if not self.analyzer.entries:
+            print("No log entries to export")
+            return
+
+        # Define CSV columns based on LogEntry fields
+        fieldnames = ['timestamp', 'timezone', 'ip', 'port', 'user', 'database', 'pid', 'level', 'message']
+
+        with open(output_file, 'w', newline='', encoding='utf-8') as csvfile:
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writeheader()
+
+            # Write each log entry as a row
+            for entry in self.analyzer.entries:
+                writer.writerow(entry.to_dict())
+
+        print(f"Exported {len(self.analyzer.entries)} entries to {output_file}")
 
     def export_to_html(self, output_file: str):
         """
