@@ -4,15 +4,15 @@ A powerful CLI tool for parsing and analyzing PostgreSQL log files with beautifu
 
 ## Features
 
-✨ **Beautiful Visualizations** - Rich terminal UI with color-coded tables, panels, and formatted output
-📊 **Comprehensive Statistics** - Parse rates, log level distributions, top databases, users, and IPs
-❌ **Error Detection** - Identify and highlight errors and fatal messages
-🐌 **Slow Query Analysis** - Find queries exceeding configurable thresholds
-🔌 **Connection Issues** - Track SSL errors, connection resets, and startup packet issues
-🔒 **Deadlock Detection** - Detailed deadlock event analysis with process and query information
-🚨 **Security Alerts** - Identify suspicious IPs with excessive connection failures
-⚠️  **Constraint Violations** - Detect database constraint violations
-💾 **Checkpoint & Vacuum Tracking** - Monitor database maintenance operations
+- ✨ **Beautiful Visualizations** - Rich terminal UI with color-coded tables, panels, and formatted output
+- 📊 **Comprehensive Statistics** - Parse rates, log level distributions, top databases, users, and IPs
+- ❌ **Error Detection** - Identify and highlight errors and fatal messages
+- 🐌 **Slow Query Analysis** - Find queries exceeding configurable thresholds
+- 🔌 **Connection Issues** - Track SSL errors, connection resets, and startup packet issues
+- 🔒 **Deadlock Detection** - Detailed deadlock event analysis with process and query information
+- 🚨 **Security Alerts** - Identify suspicious IPs with excessive connection failures
+- ⚠️ **Constraint Violations** - Detect database constraint violations
+- 💾 **Checkpoint & Vacuum Tracking** - Monitor database maintenance operations
 
 ## Installation
 
