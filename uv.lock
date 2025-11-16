@@ -1316,7 +1316,7 @@ wheels = [
 ]
 
 [[package]]
-name = "postg-log-parser"
+name = "poloa"
 version = "1.0.0"
 source = { editable = "." }
 dependencies = [

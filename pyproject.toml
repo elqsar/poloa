@@ -3,12 +3,12 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "postg-log-parser"
+name = "poloa"
 version = "1.0.0"
-description = "A CLI tool for parsing and analyzing PostgreSQL log files"
+description = "POLOA - PostgreSQL Log Analyzer"
 readme = "readme.md"
 authors = [
-    { name = "PostgreSQL Log Parser Team" }
+    { name = "POLOA Team" }
 ]
 requires-python = ">=3.8.1"
 classifiers = [
@@ -45,13 +45,13 @@ dev = [
 ]
 
 [project.scripts]
-postg-parser = "postg.cli:main"
+poloa = "poloa.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/yourusername/postg-log-parser"
+Homepage = "https://github.com/yourusername/poloa"
 
 [tool.hatch.build.targets.wheel]
-packages = ["postg"]
+packages = ["poloa"]
 
 [tool.black]
 line-length = 100
@@ -68,7 +68,7 @@ testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
-addopts = "--cov=postg --cov-report=term-missing --cov-report=html"
+addopts = "--cov=poloa --cov-report=term-missing --cov-report=html"
 
 [tool.pylint.messages_control]
 max-line-length = 100

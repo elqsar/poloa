@@ -1,5 +1,5 @@
 """
-Data models for PostgreSQL log parser.
+Data models for POLOA - PostgreSQL Log Analyzer.
 
 This module contains all data classes used throughout the application.
 """

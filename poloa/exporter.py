@@ -8,7 +8,7 @@ exporting parsed data to JSON and other formats.
 import json
 from typing import Optional
 
-from postg.analyzers import LogAnalyzer
+from poloa.analyzers import LogAnalyzer
 
 
 class LogExporter:

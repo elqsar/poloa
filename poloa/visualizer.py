@@ -13,7 +13,7 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
-from postg.analyzers import LogAnalyzer
+from poloa.analyzers import LogAnalyzer
 
 
 class LogVisualizer:

@@ -1,4 +1,4 @@
-# PostgreSQL Log Parser Configuration File
+# POLOA - PostgreSQL Log Analyzer Configuration File
 # This file contains default settings that can be overridden via CLI arguments
 
 # Threshold settings

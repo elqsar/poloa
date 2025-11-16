@@ -8,7 +8,7 @@ analysis methods for examining parsed log entries.
 import re
 from typing import List, Tuple, Optional
 
-from postg.models import LogEntry, DeadlockInfo
+from poloa.models import LogEntry, DeadlockInfo
 
 
 class LogAnalyzer:

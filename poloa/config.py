@@ -1,5 +1,5 @@
 """
-Configuration management for PostgreSQL log parser.
+Configuration management for POLOA - PostgreSQL Log Analyzer.
 
 This module handles loading and managing configuration from
 YAML files and command-line overrides.
@@ -15,7 +15,7 @@ try:
 except ImportError:
     YAML_AVAILABLE = False
 
-from postg.models import Config
+from poloa.models import Config
 
 
 class ConfigManager:
@@ -24,8 +24,8 @@ class ConfigManager:
     DEFAULT_CONFIG_PATHS = [
         'config.yaml',
         'config.yml',
-        '~/.postg/config.yaml',
-        '~/.postg/config.yml',
+        '~/.poloa/config.yaml',
+        '~/.poloa/config.yml',
     ]
 
     @classmethod

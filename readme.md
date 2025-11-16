@@ -1,4 +1,4 @@
-# PostgreSQL Log Parser
+# POLOA - PostgreSQL Log Analyzer
 
 A powerful CLI tool for parsing and analyzing PostgreSQL log files with beautiful terminal visualizations.
 
@@ -39,12 +39,12 @@ uv sync
 After installation with uv, you can run the tool using:
 ```bash
 # Using uv run (recommended)
-uv run postg-parser <log_file>
+uv run poloa <log_file>
 
 # Or activate the virtual environment
 source .venv/bin/activate  # On macOS/Linux
 # .venv\Scripts\activate   # On Windows
-postg-parser <log_file>
+poloa <log_file>
 
 # Or use the entry script directly (backward compatible)
 python3 main.py <log_file>
@@ -63,24 +63,24 @@ uv pip install .
 
 ### Basic usage
 ```bash
-uv run postg-parser postgresql.log.2025-11-14-11
+uv run poloa postgresql.log.2025-11-14-11
 # Or using the legacy entry point:
 # python3 main.py postgresql.log.2025-11-14-11
 ```
 
 ### With custom options
 ```bash
-uv run postg-parser postgresql.log.2025-11-14-11 -o report.json -t 10000 -s 100
+uv run poloa postgresql.log.2025-11-14-11 -o report.json -t 10000 -s 100
 ```
 
 ### Export all entries
 ```bash
-uv run postg-parser postgresql.log.2025-11-14-11 --export-all
+uv run poloa postgresql.log.2025-11-14-11 --export-all
 ```
 
 ### Show help
 ```bash
-uv run postg-parser --help
+uv run poloa --help
 ```
 
 ## Options
@@ -113,7 +113,7 @@ export:
 
 The tool will automatically search for config files in:
 1. `./config.yaml` (current directory)
-2. `~/.postg/config.yaml` (user home directory)
+2. `~/.poloa/config.yaml` (user home directory)
 
 Or specify a custom path with `-c/--config` option
 
@@ -126,8 +126,8 @@ The tool provides:
 ## Project Structure
 
 ```
-postg/
-├── postg/                      # Main package directory
+poloa/
+├── poloa/                      # Main package directory
 │   ├── __init__.py            # Package initialization
 │   ├── models.py              # Data models (LogEntry, DeadlockInfo, Config)
 │   ├── parser.py              # Core parsing logic
@@ -138,11 +138,9 @@ postg/
 │   └── cli.py                 # Click CLI interface
 ├── main.py                     # Entry point (backward compatible)
 ├── config.yaml                 # Default configuration file
-├── setup.py                    # Package installation configuration
-├── requirements.txt            # Production dependencies
-├── requirements-dev.txt        # Development dependencies
+├── pyproject.toml              # Package configuration
 ├── tests/                      # Test directory
-└── README.md                   # This file
+└── readme.md                   # This file
 ```
 
 ### Architecture Benefits

@@ -1,5 +1,5 @@
 """
-Command-line interface for PostgreSQL log parser.
+Command-line interface for POLOA - PostgreSQL Log Analyzer.
 
 This module provides the Click-based CLI that orchestrates
 the parser, analyzer, visualizer, and exporter components.
@@ -7,11 +7,11 @@ the parser, analyzer, visualizer, and exporter components.
 
 import click
 
-from postg.parser import PostgreSQLLogParser
-from postg.analyzers import LogAnalyzer
-from postg.visualizer import LogVisualizer
-from postg.exporter import LogExporter
-from postg.config import ConfigManager
+from poloa.parser import PostgreSQLLogParser
+from poloa.analyzers import LogAnalyzer
+from poloa.visualizer import LogVisualizer
+from poloa.exporter import LogExporter
+from poloa.config import ConfigManager
 
 
 @click.command()
@@ -28,7 +28,7 @@ from postg.config import ConfigManager
               help='Path to configuration file (YAML)')
 def main(log_file, output, export_all, slow_query_threshold, security_threshold, config):
     """
-    PostgreSQL Log Parser CLI
+    POLOA - PostgreSQL Log Analyzer CLI
 
     Parse and analyze PostgreSQL log files to extract statistics, errors, and slow queries.
 

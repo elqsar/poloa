@@ -9,7 +9,7 @@ import re
 from collections import Counter
 from typing import List, Optional
 
-from postg.models import LogEntry
+from poloa.models import LogEntry
 
 
 class PostgreSQLLogParser:
