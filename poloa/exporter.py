@@ -61,8 +61,14 @@ class LogExporter:
                 },
                 'errors': [e.to_dict() for e in self.analyzer.get_errors()],
                 'slow_queries': [
-                    {'duration_ms': duration, 'entry': entry.to_dict(), 'parameters': parameters}
-                    for duration, entry, parameters in self.analyzer.get_slow_queries(slow_query_threshold)
+                    {
+                        'duration_ms': duration,
+                        'entry': entry.to_dict(),
+                        'parameters': parameters,
+                        'expanded_query': expanded_query
+                    }
+                    for duration, entry, parameters, expanded_query
+                    in self.analyzer.get_slow_queries(slow_query_threshold)
                 ],
                 'connection_issues_count': len(self.analyzer.get_connection_issues()),
                 'checkpoints_count': len(self.analyzer.get_checkpoint_info()),

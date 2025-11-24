@@ -168,15 +168,18 @@ class LogVisualizer:
             slow_table.add_column("Duration", justify="right", style="red bold", width=12)
             slow_table.add_column("Timestamp", style="dim", width=19)
             slow_table.add_column("Database", style="cyan", width=15)
-            slow_table.add_column("Query", style="white")
+            slow_table.add_column("Query", style="white", overflow="fold")
 
-            for duration, entry, parameters in slow_queries[:10]:
-                msg = entry.message[:60] + "..." if len(entry.message) > 60 else entry.message
+            for duration, entry, parameters, expanded_query in slow_queries[:10]:
+                query_text = expanded_query or entry.message
+                if parameters and expanded_query:
+                    query_text = f"{expanded_query}\n[dim]-- parameters: {parameters}[/dim]"
+
                 slow_table.add_row(
                     f"{duration:,.2f} ms",
                     entry.timestamp,
                     entry.database or "N/A",
-                    msg
+                    query_text
                 )
 
             console.print(slow_table)

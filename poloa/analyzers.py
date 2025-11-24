@@ -6,7 +6,7 @@ analysis methods for examining parsed log entries.
 """
 
 import re
-from typing import List, Tuple, Optional
+from typing import Dict, List, Tuple, Optional
 
 from poloa.models import LogEntry, DeadlockInfo
 
@@ -30,18 +30,54 @@ class LogAnalyzer:
         """Get all ERROR and FATAL level entries"""
         return [e for e in self.entries if e.level in ('ERROR', 'FATAL')]
 
-    def get_slow_queries(self, threshold_ms: float = 3000.0) -> List[Tuple[float, LogEntry, Optional[str]]]:
+    def _extract_query_text(self, message: str) -> str:
+        """Strip duration prefix and extract the SQL statement text."""
+        duration_prefix = re.compile(r'^duration:\s*[\d.]+\s*ms\s*', re.IGNORECASE)
+        query_part = duration_prefix.sub('', message, count=1).strip()
+
+        execute_match = re.match(r'(?:execute\s+\S+|statement|plan)\s*:\s*(.*)', query_part, re.IGNORECASE)
+        if execute_match:
+            return execute_match.group(1).strip()
+
+        return query_part
+
+    @staticmethod
+    def _parse_parameter_mapping(parameters_text: str) -> Dict[int, str]:
+        """
+        Convert a DETAIL parameters string into a mapping of placeholder -> value.
+        Handles values containing commas by looking ahead to the next "$<n> =" token.
+        """
+        param_pattern = re.compile(r'\$(\d+)\s*=\s*(.+?)(?=,\s*\$\d+\s*=|$)')
+        params: Dict[int, str] = {}
+        for match in param_pattern.finditer(parameters_text):
+            params[int(match.group(1))] = match.group(2).strip()
+        return params
+
+    @staticmethod
+    def _apply_parameters(query: str, params: Dict[int, str]) -> str:
+        """Replace $n placeholders in the query with the captured parameter values."""
+        if not params or not query:
+            return query
+
+        def replacer(match):
+            idx = int(match.group(1))
+            return params.get(idx, match.group(0))
+
+        return re.sub(r'\$(\d+)', replacer, query)
+
+    def get_slow_queries(self, threshold_ms: float = 3000.0) -> List[Tuple[float, LogEntry, Optional[str], Optional[str]]]:
         """
         Extract queries that took longer than threshold_ms milliseconds.
 
-        Returns list of (duration, LogEntry, parameters) tuples sorted by duration descending.
-        Parameters are extracted from the DETAIL line following the query if available.
+        Returns list of (duration, LogEntry, parameters_text, expanded_query) tuples sorted by duration
+        descending. Parameters are extracted from the DETAIL line following the query if available, and
+        applied to the SQL so it can be copied directly into an editor.
 
         Args:
             threshold_ms: Minimum query duration in milliseconds
 
         Returns:
-            List of tuples containing (duration, log_entry, parameters)
+            List of tuples containing (duration, log_entry, parameters_text, expanded_query)
         """
         slow_queries = []
         duration_pattern = re.compile(r'duration:\s*([\d.]+)\s*ms')
@@ -57,7 +93,10 @@ class LogAnalyzer:
                     duration = float(match.group(1))
                     if duration >= threshold_ms:
                         # Try to find the DETAIL line with parameters
-                        parameters = None
+                        parameters_text = None
+                        expanded_query = None
+                        query_text = self._extract_query_text(entry.message)
+
                         # Find the line index in the original file
                         for line_idx, line in enumerate(lines):
                             if entry.raw_line in line:
@@ -68,10 +107,12 @@ class LogAnalyzer:
                                         # Extract parameters from DETAIL line
                                         param_start = next_line.find('parameters:')
                                         if param_start != -1:
-                                            parameters = next_line[param_start + 11:].strip()
+                                            parameters_text = next_line[param_start + 11:].strip()
+                                            params_map = self._parse_parameter_mapping(parameters_text)
+                                            expanded_query = self._apply_parameters(query_text, params_map)
                                 break
 
-                        slow_queries.append((duration, entry, parameters))
+                        slow_queries.append((duration, entry, parameters_text, expanded_query or query_text))
 
         # Sort by duration descending
         slow_queries.sort(key=lambda x: x[0], reverse=True)
